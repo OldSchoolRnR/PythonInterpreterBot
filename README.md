@@ -1,6 +1,8 @@
 # Python Interpreter Bot For Telegram
 
-Telegram: [@interpybot](https://storebot.me/bot/interpybot)
+Telegram: [@interpybot](http://telegram.me/interpybot)
+
+Telegram Bot Store: [Python Interpreter](https://storebot.me/bot/interpybot)
 
 Bot for telegram which interpret python code.
 
