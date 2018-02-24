@@ -10,8 +10,6 @@ For work in real time mode type "REAL_TIME_PROGRAM" (without brackets) and your 
 
 Also, this bot has default timeout decorator in 10 seconds. If you need it - type in console:
 
-*pip install timeout-decorator
+>pip install timeout-decorator
 
-Link for more information about timeout decorator:
-
-https://pypi.python.org/pypi/timeout-decorator
+Link for more information about timeout decorator: [Link!](https://pypi.python.org/pypi/timeout-decorator)
