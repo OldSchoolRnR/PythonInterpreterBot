@@ -1,4 +1,7 @@
 # Python Interpreter Bot For Telegram
+
+Telegram: @interpybot
+
 Bot for telegram which interpret python code.
 
 This bot have 2 modes. Work on real time mode and without it. 
