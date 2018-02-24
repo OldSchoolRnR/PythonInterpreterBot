@@ -1,7 +1,7 @@
 import subprocess
 import timeout_decorator
 from timeout_decorator import TimeoutError
-import os
+import os, re
 import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import logging
@@ -18,6 +18,10 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 def start(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text="I'm a Python bot, please write python code to me!")
+
+
+def help(bot, update):
+    bot.send_message(chat_id=update.message.chat_id, text="This bot have 2 modes. Work on real time mode and without it. For work in real time mode type \"REAL_TIME_PROGRAM\" (without brackets) and your code from a new line. If you don't need this - just type your code.")
 
 
 def proc(f, update, real_time):
@@ -42,7 +46,7 @@ def echo(bot, update):
     f.write(temp)
     f.flush()
     f.close()
-    if (temp.find("os.") == -1):
+    if (re.search(r'^(import\sos)|(import\s.+\sos(\s.+|$))', temp, flags=re.MULTILINE) == None):
         try:
             run_code(f, real_time, update)
         except TimeoutError:
@@ -54,13 +58,9 @@ def echo(bot, update):
     stop_all = False
 
 
-@timeout_decorator.timeout(5, use_signals=False)
+@timeout_decorator.timeout(10, use_signals=False)
 def run_code(f, real_time, update):
     process = subprocess.Popen(['python', os.getcwd() + '/' + f.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    # kill_proc = lambda p: process.kill()
-    # timer = Timer(5, kill_proc, [process])
-    # timer = Timer(5, process.kill)
-    # timer.start()
     if real_time:
         while not stop_all:
             line = process.stdout.readline().rstrip()
@@ -69,14 +69,13 @@ def run_code(f, real_time, update):
 
             if not line:
                 break
-            # yield line
+
             bot.send_message(chat_id=update.message.chat_id, text=line.encode("utf-8"))
     else:
         stdout, stderr = process.communicate()
-        # yield stdout + stderr
+
         bot.send_message(chat_id=update.message.chat_id, text=stdout.encode("utf-8")+stderr.encode("utf-8"))
-    #if timer.is_alive():
-    #    timer.cancel()
+
 
 
 def stop(bot, update):
@@ -93,9 +92,11 @@ echo_handler = MessageHandler(Filters.text, echo)
 unknown_handler = MessageHandler(Filters.command, unknown)
 start_handler = CommandHandler('start', start)
 stop_handler = CommandHandler('stop', stop)
+help_handler = CommandHandler('help', help)
 
 
 dispatcher.add_handler(start_handler)
+dispatcher.add_handler(help_handler)
 dispatcher.add_handler(stop_handler)
 dispatcher.add_handler(echo_handler)
 dispatcher.add_handler(unknown_handler)
