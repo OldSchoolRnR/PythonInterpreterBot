@@ -1,4 +1,4 @@
-import subprocess
+import subprocess, Models
 import timeout_decorator
 from timeout_decorator import TimeoutError
 import os, re
@@ -17,45 +17,69 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 
 def start(bot, update):
-    bot.send_message(chat_id=update.message.chat_id, text="I'm a Python bot, please write python code to me!")
+    try:
+        chat = bot.getChat(update.message.chat_id)
+        cur_user = Models.User.create(first_name=chat.first_name,
+                                  last_name=chat.last_name,
+                                  chat_id=update.message.chat_id)
+    except Exception:
+        pass
+    custom_keyboard = [["Turn on real time mode"]]
+    reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard, True)
+    bot.send_message(chat_id=update.message.chat_id,
+                     text="I'm a Python bot, please write python code to me!",
+                     reply_markup=reply_markup)
 
 
 def help(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text="This bot have 2 modes. Work on real time mode and without it. For work in real time mode type \"REAL_TIME_PROGRAM\" (without brackets) and your code from a new line. If you don't need this - just type your code.")
 
 
-def proc(f, update, real_time):
-    for path in run_code(f, real_time, update):
-        pass
-        # bot.send_message(chat_id=update.message.chat_id, text=path.encode("utf-8"))
-
-
 def echo(bot, update):
-    global stop_all
-    f = open(update.message.from_user.name, "w+")
-
-    #Check for os and real time
-
-    temp = update.message.text.encode('utf-8')
-    if (temp.startswith("REAL_TIME_PROGRAM")):
-        temp = temp[17:]
-        real_time = True
+    chat = bot.getChat(update.message.chat_id)
+    if (update.message.text == "Turn on real time mode"):
+        user_bot = Models.User.get(Models.User.chat_id == update.message.chat_id)
+        user_bot.real_time_check = True
+        user_bot.save()
+        custom_keyboard = [["Turn off real time mode"]]
+        reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard, True)
+        bot.send_message(chat_id=update.message.chat_id,
+                         text="Real time mode is ON",
+                         reply_markup=reply_markup)
+    elif (update.message.text == "Turn off real time mode"):
+        user_bot = Models.User.get(Models.User.chat_id == update.message.chat_id)
+        user_bot.real_time_check = False
+        user_bot.save()
+        custom_keyboard = [["Turn on real time mode"]]
+        reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard, True)
+        bot.send_message(chat_id=update.message.chat_id,
+                         text="Real time mode is OFF",
+                         reply_markup=reply_markup)
     else:
-        real_time = False
+        global stop_all
+        f = open(update.message.from_user.name, "w+")
 
-    f.write(temp)
-    f.flush()
-    f.close()
-    if (re.search(r'^(import\sos)|(import\s.+\sos(\s.+|$))', temp, flags=re.MULTILINE) == None):
-        try:
-            run_code(f, real_time, update)
-        except TimeoutError:
-            stop_all = True
-            bot.send_message(chat_id=update.message.chat_id, text="Your program worked too long!")
-    else:
-        bot.send_message(chat_id=update.message.chat_id, text="Sorry, you used forbidden command '" + "os." + "'")
-    os.remove(os.getcwd() + '/' + f.name)
-    stop_all = False
+        #Check for os and real time
+
+        temp = update.message.text.encode('utf-8')
+        if (Models.User.get(Models.User.chat_id == update.message.chat_id).real_time_check == True):
+            real_time = True
+        else:
+            real_time = False
+
+        f.write(temp)
+        f.flush()
+        f.close()
+        if (re.search(r'^(import\sos)|(import\s.+\sos(\s.+|$))', temp, flags=re.MULTILINE) == None):
+            try:
+                run_code(f, real_time, update)
+            except TimeoutError:
+                stop_all = True
+                bot.send_message(chat_id=update.message.chat_id, text="Your program worked too long!")
+        else:
+            bot.send_message(chat_id=update.message.chat_id, text="Sorry, you used forbidden command '" + "os." + "'")
+        os.remove(os.getcwd() + '/' + f.name)
+        stop_all = False
 
 
 @timeout_decorator.timeout(10, use_signals=False)
